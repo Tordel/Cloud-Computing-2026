@@ -1,0 +1,74 @@
+@inject IConfiguration Configuration
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "CloudNote — Smart Notes";
+}
+
+<section class="hero">
+    <div class="hero-text">
+        <h1 class="hero-title">Notes that<br/><em>think with you.</em></h1>
+        <p class="hero-sub">
+            CloudNote uses Google Cloud AI to automatically tag and analyse every
+            note you write — so you can focus on the ideas.
+        </p>
+        <div id="google-signin" class="g-btn-wrap">
+            <div id="g_id_onload"
+                 data-client_id="@Configuration["GoogleAuth:ClientId"]"
+                 data-callback="handleGoogleLogin"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-size="large"
+                 data-theme="outline"
+                 data-text="continue_with"
+                 data-shape="pill">
+            </div>
+        </div>
+    </div>
+    <div class="hero-pills">
+        <span class="pill pill--teal">☁ App Engine</span>
+        <span class="pill pill--orange">🔥 Firestore</span>
+        <span class="pill pill--blue">📦 Cloud Storage</span>
+        <span class="pill pill--purple">📡 Pub/Sub</span>
+        <span class="pill pill--green">🧠 NL API</span>
+    </div>
+</section>
+
+<section class="features">
+    <div class="feature-card">
+        <span class="feat-icon">🏷️</span>
+        <h3>Auto-tagging</h3>
+        <p>Cloud Natural Language API extracts key entities from your text and turns them into tags automatically.</p>
+    </div>
+    <div class="feature-card">
+        <span class="feat-icon">😊</span>
+        <h3>Sentiment Analysis</h3>
+        <p>Each note is scored for emotional tone — see at a glance how your ideas feel.</p>
+    </div>
+    <div class="feature-card">
+        <span class="feat-icon">🤝</span>
+        <h3>Sharing & Notifications</h3>
+        <p>Share notes with collaborators. Pub/Sub drives real-time in-app notifications.</p>
+    </div>
+    <div class="feature-card">
+        <span class="feat-icon">📎</span>
+        <h3>File Attachments</h3>
+        <p>Upload images and documents with every note, stored reliably in Cloud Storage.</p>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        async function handleGoogleLogin(response) {
+            const res = await fetch('/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: response.credential })
+            });
+            if (res.ok) window.location.href = '/dashboard';
+        }
+    </script>
+}

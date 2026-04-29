@@ -1,0 +1,132 @@
+@model CloudNote.Models.DashboardViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="dash-header">
+    <div>
+        <h2 class="dash-greeting">Hello, @(Model.CurrentUser?.DisplayName ?? "there") 👋</h2>
+        <p class="dash-stats">
+            <strong>@Model.TotalNotes</strong> notes &nbsp;·&nbsp;
+            <strong>@Model.SharedCount</strong> shared with you
+            @if (Model.UnreadNotifications > 0)
+            {
+                <span class="notif-badge">@Model.UnreadNotifications new</span>
+            }
+        </p>
+    </div>
+    <a href="/notes/create" class="btn-primary">+ New Note</a>
+</div>
+
+@if (Model.Notifications.Any(n => !n.IsRead))
+{
+    <div class="notif-strip">
+        @foreach (var n in Model.Notifications.Where(n => !n.IsRead).Take(3))
+        {
+            <div class="notif-item">
+                <span>🔔 @n.Message</span>
+                <a href="/notes/@n.NoteId" class="notif-link">View</a>
+            </div>
+        }
+        <button class="btn-ghost" onclick="markRead()">Dismiss all</button>
+    </div>
+}
+
+<section class="notes-section">
+    <h3 class="section-title">My Notes</h3>
+    @if (!Model.MyNotes.Any())
+    {
+        <p class="empty-state">No notes yet. <a href="/notes/create">Create your first one →</a></p>
+    }
+    else
+    {
+        <div class="notes-grid">
+            @foreach (var note in Model.MyNotes)
+            {
+                <div class="note-card" data-sentiment="@note.SentimentMagnitude.ToLower().Replace(" ", "-")">
+                    <div class="note-card-top">
+                        <h4 class="note-title">
+                            <a href="/notes/@note.Id">@note.Title</a>
+                        </h4>
+                        <span class="sentiment-badge">@note.SentimentMagnitude</span>
+                    </div>
+                    <p class="note-preview">@(note.Content.Length > 120 ? note.Content[..120] + "…" : note.Content)</p>
+                    @if (note.Tags.Any())
+                    {
+                        <div class="tag-row">
+                            @foreach (var tag in note.Tags.Take(5))
+                            {
+                                <span class="tag">#@tag</span>
+                            }
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(note.AttachmentUrl))
+                    {
+                        <a class="attach-link" href="@note.AttachmentUrl" target="_blank">📎 @note.AttachmentFileName</a>
+                    }
+                    <div class="note-actions">
+                        <a href="/notes/@note.Id/edit" class="btn-sm">Edit</a>
+                        <form action="/notes/@note.Id/delete" method="post" style="display:inline"
+                              onsubmit="return confirm('Delete this note?')">
+                            @Html.AntiForgeryToken()
+                            <button class="btn-sm btn-danger">Delete</button>
+                        </form>
+                        <button class="btn-sm" onclick="openShare('@note.Id')">Share</button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+@if (Model.SharedWithMe.Any())
+{
+    <section class="notes-section">
+        <h3 class="section-title">Shared with me</h3>
+        <div class="notes-grid">
+            @foreach (var note in Model.SharedWithMe)
+            {
+                <div class="note-card note-card--shared">
+                    <h4 class="note-title"><a href="/notes/@note.Id">@note.Title</a></h4>
+                    <p class="note-meta">from @note.OwnerEmail</p>
+                    <p class="note-preview">@(note.Content.Length > 100 ? note.Content[..100] + "…" : note.Content)</p>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<!-- Share Modal -->
+<div id="share-modal" class="modal" style="display:none">
+    <div class="modal-box">
+        <h3>Share Note</h3>
+        <form id="share-form" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="NoteId" id="share-note-id" />
+            <label for="ShareWithEmail">Email address</label>
+            <input type="email" name="ShareWithEmail" id="ShareWithEmail"
+                   class="input" placeholder="collaborator@example.com" required />
+            <div class="modal-actions">
+                <button type="submit" class="btn-primary">Share</button>
+                <button type="button" class="btn-ghost" onclick="closeShare()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function openShare(id) {
+        document.getElementById('share-note-id').value = id;
+        document.getElementById('share-form').action = '/notes/' + id + '/share';
+        document.getElementById('share-modal').style.display = 'flex';
+    }
+    function closeShare() { document.getElementById('share-modal').style.display = 'none'; }
+
+    async function markRead() {
+        await fetch('/notifications/read', { method: 'POST' });
+        location.reload();
+    }
+</script>
+}

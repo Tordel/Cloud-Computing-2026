@@ -1,0 +1,38 @@
+@model CloudNote.Models.NoteEditViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Edit Note";
+}
+
+<div class="form-page">
+    <h2 class="form-title">Edit Note</h2>
+
+    <form asp-action="Edit" asp-controller="Notes" asp-route-id="@Model.Id"
+          method="post" enctype="multipart/form-data" class="note-form">
+        @Html.AntiForgeryToken()
+
+        <label asp-for="Title">Title</label>
+        <input asp-for="Title" class="input" required />
+
+        <label asp-for="Content">Content</label>
+        <textarea asp-for="Content" class="input textarea" rows="8" required></textarea>
+
+        <label asp-for="Tags">Tags</label>
+        <input asp-for="Tags" class="input" />
+
+        @if (!string.IsNullOrEmpty(Model.ExistingAttachmentUrl))
+        {
+            <p class="attach-current">
+                Current attachment: <a href="@Model.ExistingAttachmentUrl" target="_blank">@Model.ExistingAttachmentFileName</a>
+            </p>
+        }
+
+        <label asp-for="Attachment">Replace Attachment</label>
+        <input asp-for="Attachment" type="file" class="input" />
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Update Note</button>
+            <a href="/dashboard" class="btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>

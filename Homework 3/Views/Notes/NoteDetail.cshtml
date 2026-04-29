@@ -1,0 +1,124 @@
+@model CloudNote.Models.Note
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = Model.Title;
+    bool isOwner = Context.Session.GetString("UserId") == Model.OwnerId;
+}
+
+<div class="detail-page">
+    <div class="detail-header">
+        <div class="detail-header-left">
+            <a href="/dashboard" class="back-link">← Dashboard</a>
+            <h1 class="detail-title">@Model.Title</h1>
+            <p class="detail-meta">
+                by @Model.OwnerEmail &nbsp;·&nbsp;
+                @Model.UpdatedAt.ToDateTime().ToString("dd MMM yyyy, HH:mm")
+            </p>
+        </div>
+        @if (isOwner)
+        {
+            <div class="detail-actions">
+                <a href="/notes/@Model.Id/edit" class="btn-primary">Edit</a>
+                <button class="btn-sm" onclick="openShare('@Model.Id')">Share</button>
+                <form action="/notes/@Model.Id/delete" method="post" style="display:inline"
+                      onsubmit="return confirm('Delete this note?')">
+                    @Html.AntiForgeryToken()
+                    <button class="btn-sm btn-danger">Delete</button>
+                </form>
+            </div>
+        }
+    </div>
+
+    <div class="detail-body">
+        <div class="detail-content">
+            <p>@Model.Content</p>
+        </div>
+
+        <aside class="detail-sidebar">
+            <!-- Sentiment -->
+            <div class="sidebar-card">
+                <h4>Sentiment</h4>
+                <div class="sentiment-dial sentiment-@Model.SentimentMagnitude.ToLower().Replace(" ", "-")">
+                    <span class="sentiment-label">@Model.SentimentMagnitude</span>
+                    <span class="sentiment-score">score @Model.SentimentScore.ToString("F2")</span>
+                </div>
+            </div>
+
+            <!-- Tags -->
+            @if (Model.Tags.Any())
+            {
+                <div class="sidebar-card">
+                    <h4>Tags</h4>
+                    <div class="tag-row">
+                        @foreach (var tag in Model.Tags)
+                        {
+                            <span class="tag">#@tag</span>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Attachment -->
+            @if (!string.IsNullOrEmpty(Model.AttachmentUrl))
+            {
+                <div class="sidebar-card">
+                    <h4>Attachment</h4>
+                    <a class="attach-link" href="@Model.AttachmentUrl" target="_blank">
+                        📎 @Model.AttachmentFileName
+                    </a>
+                </div>
+            }
+
+            <!-- Shared with -->
+            @if (Model.SharedWith.Any())
+            {
+                <div class="sidebar-card">
+                    <h4>Shared with</h4>
+                    <ul class="shared-list">
+                        @foreach (var email in Model.SharedWith)
+                        {
+                            <li>@email</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <!-- Cloud services badge -->
+            <div class="sidebar-card sidebar-card--services">
+                <h4>Powered by</h4>
+                <ul class="service-list">
+                    <li>🔥 Cloud Firestore</li>
+                    <li>📦 Cloud Storage</li>
+                    <li>📡 Cloud Pub/Sub</li>
+                    <li>🧠 Natural Language API</li>
+                    <li>☁ App Engine</li>
+                </ul>
+            </div>
+        </aside>
+    </div>
+</div>
+
+@if (isOwner)
+{
+    <!-- Share Modal -->
+    <div id="share-modal" class="modal" style="display:none">
+        <div class="modal-box">
+            <h3>Share Note</h3>
+            <form action="/notes/@Model.Id/share" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="NoteId" value="@Model.Id" />
+                <label for="ShareWithEmail">Collaborator email</label>
+                <input type="email" name="ShareWithEmail" id="ShareWithEmail"
+                       class="input" placeholder="colleague@example.com" required />
+                <div class="modal-actions">
+                    <button type="submit" class="btn-primary">Share</button>
+                    <button type="button" class="btn-ghost" onclick="closeShare()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        function openShare(id) { document.getElementById('share-modal').style.display = 'flex'; }
+        function closeShare()  { document.getElementById('share-modal').style.display = 'none'; }
+    </script>
+}

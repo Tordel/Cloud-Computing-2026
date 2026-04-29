@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] ?? "CloudNote")</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;1,300&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="/">☁ CloudNote</a>
+        @if (Context.Session.GetString("UserId") is not null)
+        {
+            <nav class="topbar-nav">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/notes/create">+ New Note</a>
+                <div class="user-chip">
+                    @if (!string.IsNullOrEmpty(Context.Session.GetString("UserPhoto")))
+                    {
+                        <img src="@Context.Session.GetString("UserPhoto")" alt="avatar" class="avatar" />
+                    }
+                    <span>@Context.Session.GetString("UserName")</span>
+                    <form action="/auth/logout" method="post" style="display:inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-ghost">Sign out</button>
+                    </form>
+                </div>
+            </nav>
+        }
+    </header>
+
+    @if (TempData["Success"] is string msg)
+    {
+        <div class="flash flash--success">@msg</div>
+    }
+
+    <main class="page-content">
+        @RenderBody()
+    </main>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

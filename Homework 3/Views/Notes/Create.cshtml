@@ -1,0 +1,34 @@
+@model CloudNote.Models.NoteCreateViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "New Note";
+}
+
+<div class="form-page">
+    <h2 class="form-title">New Note</h2>
+    <p class="form-sub">Tags and sentiment will be generated automatically by Cloud Natural Language API.</p>
+
+    <form asp-action="Create" asp-controller="Notes" method="post" enctype="multipart/form-data" class="note-form">
+        @Html.AntiForgeryToken()
+
+        <label asp-for="Title">Title</label>
+        <input asp-for="Title" class="input" placeholder="Give your note a title" required />
+        <span asp-validation-for="Title" class="field-error"></span>
+
+        <label asp-for="Content">Content</label>
+        <textarea asp-for="Content" class="input textarea" rows="8"
+                  placeholder="Write anything — ideas, meeting notes, thoughts…" required></textarea>
+        <span asp-validation-for="Content" class="field-error"></span>
+
+        <label asp-for="Tags">Tags <small>(optional — AI will add more)</small></label>
+        <input asp-for="Tags" class="input" placeholder="e.g. work, ideas, project-x" />
+
+        <label asp-for="Attachment">Attachment <small>(optional, max 10 MB)</small></label>
+        <input asp-for="Attachment" type="file" class="input" />
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Save Note</button>
+            <a href="/dashboard" class="btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
