@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BookVault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #f8f5f0;
+      --surface:  #ffffff;
+      --border:   #e2dcd4;
+      --text:     #1a1510;
+      --muted:    #6b6460;
+      --accent:   #c4540a;
+      --accent-l: #f5ede6;
+      --green:    #1a7a4a;
+      --green-l:  #e6f5ed;
+      --blue:     #2563eb;
+      --shadow:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    h1, h2, h3 { font-family: 'Lora', serif; }
+
+    /* Layout */
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; gap: 1rem; height: 56px; position: sticky; top: 0; z-index: 10; }
+    header h1 { font-size: 1.25rem; color: var(--accent); flex-shrink: 0; }
+    .search-bar { flex: 1; max-width: 480px; }
+    .search-bar input { width: 100%; padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: var(--bg); font-family: inherit; outline: none; }
+    .search-bar input:focus { border-color: var(--accent); }
+    nav { display: flex; gap: 0.25rem; margin-left: auto; }
+    nav button { background: none; border: none; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; color: var(--muted); font-family: inherit; }
+    nav button.active, nav button:hover { background: var(--accent-l); color: var(--accent); }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+    /* Book grid */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; }
+    .book-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; cursor: pointer; transition: box-shadow .15s; box-shadow: var(--shadow); }
+    .book-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .book-cover { width: 100%; aspect-ratio: 2/3; background: linear-gradient(135deg, #e8ddd0 0%, #d4c5b2 100%); display: flex; align-items: center; justify-content: center; font-family: 'Lora', serif; font-size: 0.85rem; color: var(--muted); text-align: center; padding: 1rem; overflow: hidden; position: relative; }
+    .book-cover.has-image { padding: 0; }
+    .book-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .book-meta { padding: 0.75rem 0.75rem 0.4rem; }
+    .book-card-footer { padding: 0 0.75rem 0.75rem; display: flex; align-items: center; justify-content: space-between; }
+    .btn-delete { background: none; border: 1px solid var(--border); border-radius: 5px; padding: 0.25rem 0.55rem; font-size: 0.75rem; cursor: pointer; color: var(--muted); font-family: inherit; line-height: 1; transition: color .15s, border-color .15s, background .15s; }
+    .btn-delete:hover { color: #c0392b; border-color: #e8b4b0; background: #fdecea; }
+    .book-title { font-family: 'Lora', serif; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.25rem; line-height: 1.3; }
+    .book-author { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .stars { font-size: 0.8rem; color: var(--accent); }
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 500; background: var(--accent-l); color: var(--accent); }
+
+    /* Detail panel */
+    .panel-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 20; display: flex; align-items: flex-start; justify-content: flex-end; }
+    .panel { background: var(--surface); width: min(520px, 100vw); height: 100vh; overflow-y: auto; box-shadow: -4px 0 24px rgba(0,0,0,0.12); display: flex; flex-direction: column; }
+    .panel-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 1rem; }
+    .panel-cover { width: 90px; flex-shrink: 0; aspect-ratio: 2/3; border-radius: 6px; background: linear-gradient(135deg, #e8ddd0 0%, #d4c5b2 100%); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--muted); text-align: center; padding: 0.5rem; overflow: hidden; }
+    .panel-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+    .panel-info h2 { font-size: 1.2rem; margin-bottom: 0.25rem; }
+    .panel-info .by { font-size: 0.9rem; color: var(--muted); margin-bottom: 0.5rem; }
+    .panel-body { padding: 1.25rem 1.5rem; flex: 1; }
+    .section-title { font-family: 'Lora', serif; font-size: 1rem; font-weight: 600; margin: 1rem 0 0.5rem; }
+    .review-card { border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem; }
+    .review-text { font-size: 0.875rem; line-height: 1.6; color: var(--text); }
+    .review-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.4rem; display: flex; align-items: center; gap: 0.5rem; }
+    .sentiment { font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 500; }
+    .sentiment.positive { background: var(--green-l); color: var(--green); }
+    .sentiment.negative { background: #fdecea; color: #c0392b; }
+    .sentiment.neutral  { background: #f0f0f0; color: #555; }
+    .close-btn { margin-left: auto; background: none; border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; cursor: pointer; font-size: 0.8rem; color: var(--muted); font-family: inherit; }
+
+    /* Add review form */
+    .form-group { margin-bottom: 0.75rem; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem; }
+    .form-group textarea, .form-group input, .form-group select { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.875rem; font-family: inherit; background: var(--bg); outline: none; }
+    .form-group textarea:focus, .form-group input:focus { border-color: var(--accent); }
+    .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 1rem; border-radius: 6px; font-size: 0.875rem; font-family: inherit; cursor: pointer; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { opacity: 0.9; }
+    .tag-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .tag { padding: 0.3rem 0.75rem; border: 1px solid var(--border); border-radius: 20px; font-size: 0.8rem; cursor: pointer; background: var(--surface); }
+    .tag.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .loading { text-align: center; padding: 3rem; color: var(--muted); font-style: italic; }
+    .empty { text-align: center; padding: 3rem; color: var(--muted); }
+
+    /* Cover upload drop zone */
+    .cover-drop {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      background: var(--bg);
+      position: relative;
+    }
+    .cover-drop:hover, .cover-drop.dragover {
+      border-color: var(--accent);
+      background: var(--accent-l);
+    }
+    .cover-drop input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .cover-drop .drop-icon { font-size: 2rem; margin-bottom: 0.4rem; }
+    .cover-drop .drop-label { font-size: 0.8rem; color: var(--muted); }
+    .cover-preview-wrap { display: flex; align-items: center; gap: 1rem; }
+    .cover-preview {
+      width: 72px; flex-shrink: 0; aspect-ratio: 2/3;
+      border-radius: 6px; overflow: hidden; border: 1px solid var(--border);
+      background: linear-gradient(135deg, #e8ddd0 0%, #d4c5b2 100%);
+    }
+    .cover-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .cover-preview-info { font-size: 0.8rem; color: var(--muted); }
+    .cover-preview-info strong { display: block; color: var(--text); font-size: 0.85rem; margin-bottom: 0.15rem; }
+    .cover-clear { background: none; border: 1px solid var(--border); border-radius: 4px; padding: 0.2rem 0.5rem; font-size: 0.75rem; cursor: pointer; color: var(--muted); font-family: inherit; margin-top: 0.4rem; }
+    .cover-clear:hover { color: #c0392b; border-color: #c0392b; }
+    .upload-progress { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 0.5rem; }
+    .upload-progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width .3s; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📚 BookVault</h1>
+  <div class="search-bar">
+    <input id="searchInput" type="text" placeholder="Search books, authors…" oninput="debounceSearch()" />
+  </div>
+  <nav>
+    <button class="active" onclick="setPage('browse')">Browse</button>
+    <button onclick="setPage('add')">+ Add Book</button>
+  </nav>
+</header>
+
+<main>
+  <div id="app"></div>
+</main>
+
+<!-- Book detail panel -->
+<div id="panel" class="panel-backdrop" style="display:none" onclick="closePanel(event)">
+  <div class="panel" id="panelContent">
+    <div class="panel-header">
+      <div class="panel-cover" id="panelCover">cover</div>
+      <div class="panel-info">
+        <h2 id="panelTitle"></h2>
+        <div class="by" id="panelAuthor"></div>
+        <div class="stars" id="panelRating"></div>
+        <div style="margin-top:0.4rem" id="panelBadge"></div>
+      </div>
+      <button class="close-btn" onclick="closePanel()">✕ Close</button>
+    </div>
+    <div class="panel-body">
+      <p id="panelDesc" style="font-size:0.875rem;line-height:1.6;color:var(--muted)"></p>
+
+      <div class="section-title">Write a Review</div>
+      <div class="form-group">
+        <label>Your name</label>
+        <input id="reviewUser" placeholder="Enter your name" />
+      </div>
+      <div class="form-group">
+        <label>Rating</label>
+        <select id="reviewRating">
+          <option value="5">⭐⭐⭐⭐⭐ 5 – Excellent</option>
+          <option value="4">⭐⭐⭐⭐ 4 – Good</option>
+          <option value="3" selected>⭐⭐⭐ 3 – OK</option>
+          <option value="2">⭐⭐ 2 – Poor</option>
+          <option value="1">⭐ 1 – Terrible</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Review text</label>
+        <textarea id="reviewText" rows="3" placeholder="Share your thoughts…"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="submitReview()">Submit Review</button>
+      <span id="reviewStatus" style="font-size:0.8rem;margin-left:0.75rem;color:var(--muted)"></span>
+
+      <div class="section-title">Reviews</div>
+      <div id="reviewList"><p class="loading">Loading reviews…</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+const API = window.location.hostname === "localhost"
+  ? "http://localhost:8000/api"
+  : "https://temacloud.azurewebsites.net/api";
+
+let currentPage  = "browse";
+let currentBook  = null;
+let currentGenre = null;
+let searchTimer  = null;
+
+// ── Routing ───────────────────────────────────────────────────────────────────
+function setPage(p) {
+  currentPage = p;
+  document.querySelectorAll("nav button").forEach((b, i) => {
+    b.classList.toggle("active", (i === 0 && p === "browse") || (i === 1 && p === "add"));
+  });
+  render();
+}
+
+async function render() {
+  const app = document.getElementById("app");
+  if (currentPage === "browse") {
+    app.innerHTML = renderBrowse();
+    await loadBooks();
+  } else {
+    app.innerHTML = renderAddForm();
+  }
+}
+
+// ── Browse page ───────────────────────────────────────────────────────────────
+const GENRES = ["All", "Fiction", "Non-Fiction", "Science", "History", "Fantasy", "Biography", "Mystery"];
+
+function renderBrowse() {
+  const tags = GENRES.map(g =>
+    `<span class="tag ${(!currentGenre && g==="All") || currentGenre===g ? "active" : ""}"
+           onclick="filterGenre('${g}')">${g}</span>`
+  ).join("");
+  return `
+    <div class="tag-bar">${tags}</div>
+    <div class="grid" id="bookGrid"><p class="loading">Loading books…</p></div>
+  `;
+}
+
+function filterGenre(g) {
+  currentGenre = (g === "All") ? null : g;
+  loadBooks();
+  document.querySelectorAll(".tag").forEach(t => {
+    t.classList.toggle("active",
+      (currentGenre === null && t.textContent === "All") || t.textContent === currentGenre);
+  });
+}
+
+async function loadBooks(query) {
+  const grid = document.getElementById("bookGrid");
+  if (!grid) return;
+  grid.innerHTML = '<p class="loading">Loading…</p>';
+  try {
+    let url;
+    if (query) {
+      url = `${API}/search/?q=${encodeURIComponent(query)}&limit=30`;
+    } else {
+      url = `${API}/books/?limit=30${currentGenre ? "&genre=" + currentGenre : ""}`;
+    }
+    const books = await fetch(url).then(r => r.json());
+    grid.innerHTML = books.length
+      ? books.map(bookCard).join("")
+      : '<p class="empty">No books found.</p>';
+  } catch {
+    grid.innerHTML = '<p class="empty">Could not connect to API.</p>';
+  }
+}
+
+function stars(n) {
+  return "⭐".repeat(Math.round(n)) + ` <span style="color:var(--muted);font-size:0.75rem">(${n.toFixed(1)})</span>`;
+}
+
+function bookCard(b) {
+  const hasImage = b.coverUrl && b.coverUrl !== "null" && b.coverUrl !== "";
+  const cover = hasImage
+    ? `<img src="${b.coverUrl}" alt="${b.title}" onerror="this.parentElement.classList.remove('has-image');this.remove()" />`
+    : `<span>${b.title}</span>`;
+  return `
+    <div class="book-card">
+      <div class="book-cover${hasImage ? " has-image" : ""}" onclick="openBook('${b.id}')">${cover}</div>
+      <div class="book-meta" onclick="openBook('${b.id}')">
+        <div class="book-title">${b.title}</div>
+        <div class="book-author">${b.author}</div>
+        <div class="stars">${b.avgRating > 0 ? stars(b.avgRating) : "No ratings yet"}</div>
+      </div>
+      <div class="book-card-footer">
+        <span class="badge">${b.genre}</span>
+        <button class="btn-delete" onclick="deleteBook('${b.id}','${b.genre}',this)" title="Delete book">&#x1F5D1; Delete</button>
+      </div>
+    </div>`;
+}
+
+async function deleteBook(bookId, genre, btn) {
+  if (!confirm("Delete this book? This cannot be undone.")) return;
+  btn.textContent = "…";
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/books/${bookId}`, { method: "DELETE" });
+    if (res.ok || res.status === 204) {
+      btn.closest(".book-card").remove();
+    } else {
+      btn.textContent = "🗑 Delete";
+      btn.disabled = false;
+      alert("Could not delete book.");
+    }
+  } catch {
+    btn.textContent = "🗑 Delete";
+    btn.disabled = false;
+    alert("Network error.");
+  }
+}
+
+// ── Book panel ────────────────────────────────────────────────────────────────
+async function openBook(id) {
+  const book = await fetch(`${API}/books/${id}`).then(r => r.json());
+  currentBook = book;
+
+  document.getElementById("panelTitle").textContent  = book.title;
+  document.getElementById("panelAuthor").textContent = `by ${book.author} · ${book.year}`;
+  document.getElementById("panelRating").innerHTML   = book.avgRating > 0 ? stars(book.avgRating) : "No ratings yet";
+  document.getElementById("panelBadge").innerHTML    = `<span class="badge">${book.genre}</span>`;
+  document.getElementById("panelDesc").textContent   = book.description || "";
+  document.getElementById("panelCover").innerHTML    = book.coverUrl
+    ? `<img src="${book.coverUrl}" alt="${book.title}" />`
+    : book.title;
+
+  document.getElementById("panel").style.display = "flex";
+  await loadReviews(id);
+}
+
+async function loadReviews(bookId) {
+  const list = document.getElementById("reviewList");
+  list.innerHTML = '<p class="loading">Loading reviews…</p>';
+  const reviews = await fetch(`${API}/reviews/book/${bookId}`).then(r => r.json());
+  if (!reviews.length) { list.innerHTML = '<p style="color:var(--muted);font-size:0.875rem">No reviews yet – be the first!</p>'; return; }
+  list.innerHTML = reviews.map(r => {
+    const s = r.sentiment || {};
+    const label = s.label || "unknown";
+    return `
+      <div class="review-card">
+        <div class="review-text">${r.text}</div>
+        <div class="review-meta">
+          <span>⭐ ${r.rating}/5</span>
+          <span class="sentiment ${label}">${label}</span>
+          <span style="margin-left:auto;color:var(--muted)">${r.userId}</span>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+async function submitReview() {
+  const status = document.getElementById("reviewStatus");
+  const userId = document.getElementById("reviewUser").value.trim() || "Anonymous";
+  const rating = parseInt(document.getElementById("reviewRating").value);
+  const text   = document.getElementById("reviewText").value.trim();
+  if (!text) { status.textContent = "Please write something."; return; }
+
+  status.textContent = "Analysing sentiment…";
+  try {
+    await fetch(`${API}/reviews/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookId: currentBook.id, userId, rating, text }),
+    });
+    status.textContent = "✓ Review submitted!";
+    document.getElementById("reviewText").value = "";
+    await loadReviews(currentBook.id);
+  } catch {
+    status.textContent = "Error submitting review.";
+  }
+}
+
+function closePanel(e) {
+  if (e && e.target !== document.getElementById("panel")) return;
+  document.getElementById("panel").style.display = "none";
+  currentBook = null;
+}
+
+// ── Add Book form ─────────────────────────────────────────────────────────────
+let selectedCoverFile = null;
+
+function renderAddForm() {
+  return `
+    <div style="max-width:480px;margin:0 auto">
+      <h2 style="margin-bottom:1.5rem">Add a Book</h2>
+      <div class="form-group"><label>Title *</label><input id="fTitle" placeholder="Book title" /></div>
+      <div class="form-group"><label>Author *</label><input id="fAuthor" placeholder="Author name" /></div>
+      <div class="form-group"><label>Genre *</label>
+        <select id="fGenre">
+          ${GENRES.filter(g=>g!=="All").map(g=>`<option>${g}</option>`).join("")}
+        </select>
+      </div>
+      <div class="form-group"><label>Year *</label><input id="fYear" type="number" placeholder="e.g. 2023" /></div>
+      <div class="form-group"><label>Description</label><textarea id="fDesc" rows="3" placeholder="Short description…"></textarea></div>
+
+      <div class="form-group">
+        <label>Cover Image <span style="color:var(--muted);font-weight:400">(optional · JPEG / PNG / WebP)</span></label>
+        <div id="coverDropZone" class="cover-drop"
+             ondragover="onCoverDragOver(event)" ondragleave="onCoverDragLeave(event)" ondrop="onCoverDrop(event)">
+          <input type="file" id="coverFileInput" accept="image/jpeg,image/png,image/webp"
+                 onchange="onCoverFileChange(event)" />
+          <div id="coverDropContent">
+            <div class="drop-icon">🖼️</div>
+            <div class="drop-label">Drag &amp; drop an image here, or <strong>click to browse</strong></div>
+          </div>
+        </div>
+        <div id="coverPreviewArea" style="display:none;margin-top:0.75rem">
+          <div class="cover-preview-wrap">
+            <div class="cover-preview"><img id="coverPreviewImg" src="" alt="cover preview" /></div>
+            <div class="cover-preview-info">
+              <strong id="coverFileName"></strong>
+              <span id="coverFileSize"></span>
+              <button class="cover-clear" onclick="clearCover()">✕ Remove</button>
+            </div>
+          </div>
+          <div class="upload-progress" id="uploadProgressWrap" style="display:none">
+            <div class="upload-progress-bar" id="uploadProgressBar"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="addBook()">Add Book</button>
+      <span id="addStatus" style="font-size:0.8rem;margin-left:0.75rem;color:var(--muted)"></span>
+    </div>`;
+}
+
+function onCoverDragOver(e) {
+  e.preventDefault();
+  document.getElementById("coverDropZone").classList.add("dragover");
+}
+function onCoverDragLeave(e) {
+  document.getElementById("coverDropZone").classList.remove("dragover");
+}
+function onCoverDrop(e) {
+  e.preventDefault();
+  document.getElementById("coverDropZone").classList.remove("dragover");
+  const file = e.dataTransfer.files[0];
+  if (file) applyCoverFile(file);
+}
+function onCoverFileChange(e) {
+  const file = e.target.files[0];
+  if (file) applyCoverFile(file);
+}
+function applyCoverFile(file) {
+  if (!["image/jpeg","image/png","image/webp"].includes(file.type)) {
+    alert("Please choose a JPEG, PNG, or WebP image.");
+    return;
+  }
+  selectedCoverFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById("coverPreviewImg").src = ev.target.result;
+    document.getElementById("coverFileName").textContent = file.name;
+    document.getElementById("coverFileSize").textContent = (file.size / 1024).toFixed(1) + " KB";
+    document.getElementById("coverPreviewArea").style.display = "block";
+    document.getElementById("coverDropZone").style.display = "none";
+  };
+  reader.readAsDataURL(file);
+}
+function clearCover() {
+  selectedCoverFile = null;
+  document.getElementById("coverPreviewArea").style.display = "none";
+  document.getElementById("coverDropZone").style.display = "block";
+  document.getElementById("coverFileInput").value = "";
+}
+
+async function uploadCover(bookId, file, statusEl) {
+  const progressWrap = document.getElementById("uploadProgressWrap");
+  const progressBar  = document.getElementById("uploadProgressBar");
+  if (progressWrap) progressWrap.style.display = "block";
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", `${API}/books/${bookId}/cover`);
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable && progressBar) {
+        progressBar.style.width = Math.round(e.loaded / e.total * 100) + "%";
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        resolve(JSON.parse(xhr.responseText));
+      } else {
+        reject(new Error(`Cover upload failed: ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Network error during cover upload"));
+    const fd = new FormData();
+    fd.append("cover", file);
+    xhr.send(fd);
+  });
+}
+
+async function addBook() {
+  const status = document.getElementById("addStatus");
+  const body = {
+    title:       document.getElementById("fTitle").value.trim(),
+    author:      document.getElementById("fAuthor").value.trim(),
+    genre:       document.getElementById("fGenre").value,
+    year:        parseInt(document.getElementById("fYear").value),
+    description: document.getElementById("fDesc").value.trim(),
+  };
+  if (!body.title || !body.author || !body.year) {
+    status.textContent = "Please fill in all required fields."; return;
+  }
+  status.textContent = "Saving book…";
+  try {
+    const book = await fetch(`${API}/books/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(r => r.json());
+
+    if (selectedCoverFile) {
+      status.textContent = "Uploading cover…";
+    try {
+        await uploadCover(book.id, selectedCoverFile, status);
+        status.textContent = `✓ "${book.title}" added with cover!`;
+        // Refresh the list to show the new cover
+        if (currentPage === "browse") loadBooks();
+      } catch (coverErr) {
+          status.textContent = `✓ "${book.title}" added (cover upload failed)`;
+      }
+    } else {
+      status.textContent = `✓ "${book.title}" added!`;
+    }
+
+    // Reset cover state
+    selectedCoverFile = null;
+    const pa = document.getElementById("coverPreviewArea");
+    const dz = document.getElementById("coverDropZone");
+    if (pa) pa.style.display = "none";
+    if (dz) dz.style.display = "block";
+    const fi = document.getElementById("coverFileInput");
+    if (fi) fi.value = "";
+
+  } catch { status.textContent = "Error adding book."; }
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  const q = document.getElementById("searchInput").value.trim();
+  searchTimer = setTimeout(() => {
+    if (currentPage !== "browse") setPage("browse");
+    if (q.length > 1) loadBooks(q); else loadBooks();
+  }, 320);
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
